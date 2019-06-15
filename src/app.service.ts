@@ -3,12 +3,14 @@ import { SubstanceDTO } from './data/dto/substance.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Substance } from './data/entities/substance';
 import { Repository } from 'typeorm';
+import { CacheService } from './cache.service';
 
 @Injectable()
 export class AppService {
   constructor(
     @InjectRepository(Substance)
     private readonly substanceRepository: Repository<Substance>,
+    private readonly cacheService: CacheService,
   ) { }
 
   getHello(): string {
@@ -32,5 +34,20 @@ export class AppService {
 // tslint:disable-next-line: no-console
       console.log(error);
     }
+  }
+
+  async querySubstances(query: string): Promise<SubstanceDTO[]> {
+    const ingredientsString = 'ingredients: ';
+    const startOfIngredients = query.indexOf(ingredientsString) + ingredientsString.length + 1;
+    const endOfIngredients =  query.substring(startOfIngredients).indexOf('.');
+    const ingredients = query.slice(startOfIngredients, (endOfIngredients + ingredientsString.length - 1));
+
+    const ingredientNames = ingredients.split(', ');
+
+    const substances = this.cacheService.Substances
+    .filter(substance => ingredientNames.includes(substance.Name)
+    || substance.Synonyms.map(syno => syno.Name).includes(substance.Name) );
+
+    return substances;
   }
 }
