@@ -38,16 +38,30 @@ export class AppService {
 
   async querySubstances(query: string): Promise<SubstanceDTO[]> {
     const ingredientsString = 'ingredients: ';
-    const startOfIngredients = query.indexOf(ingredientsString) + ingredientsString.length + 1;
+    const startOfIngredients = query.indexOf(ingredientsString) + ingredientsString.length;
     const endOfIngredients =  query.substring(startOfIngredients).indexOf('.');
-    const ingredients = query.slice(startOfIngredients, (endOfIngredients + ingredientsString.length - 1));
+    const ingredients = query.slice(startOfIngredients, (endOfIngredients + ingredientsString.length));
 
-    const ingredientNames = ingredients.split(', ');
+    const ingredientNames = ingredients.toLowerCase().split(', ').map(x=>x.trim());
 
-    const substances = this.cacheService.Substances
-    .filter(substance => ingredientNames.includes(substance.Name)
-    || substance.Synonyms.map(syno => syno.Name).includes(substance.Name) );
+    const groupBy = (items, key) => items.reduce(
+      (result, item) => ({
+        ...result,
+        [item[key]]: [
+          ...(result[item[key]] || []),
+          item,
+        ],
+      }),
+      {},
+    );
 
-    return substances;
+    const matchedSubstances = this.cacheService.Substances
+    .filter(substance => ingredientNames.includes(substance.Name.toLowerCase()) || this.selectSynonyms(substance, ingredientNames));
+
+    return groupBy(matchedSubstances, 'MasterExternalId');
+  }
+
+  private selectSynonyms(substance: SubstanceDTO, ingredientNames: string[]): boolean {
+    return substance.Synonymes.map(syn => syn.Name.toLowerCase()).some(v => ingredientNames.includes(v));
   }
 }

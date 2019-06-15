@@ -9,5 +9,5 @@ export class SubstanceDTO {
   public Type: SubstanceType;
   public ExternalUrl: string;
   public MasterExternalId: number;
-  public Synonyms: SynonymDTO[];
+  public Synonymes: SynonymDTO[];
 }
