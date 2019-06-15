@@ -1,5 +1,7 @@
-import { Column, PrimaryGeneratedColumn, Entity } from 'typeorm';
+import { Column, PrimaryGeneratedColumn, Entity, OneToMany } from 'typeorm';
 import { SubstanceType } from 'src/common/substanceType';
+import { type } from 'os';
+import { Synonym } from './synonym';
 
 @Entity({
     name: 'Substances',
@@ -26,4 +28,7 @@ export class Substance {
 
     @Column()
     public MasterExternalId: number;
+
+    @OneToMany(type => Synonym, synonym => synonym.Substance)
+    public Synonymes: Synonym[];
 }

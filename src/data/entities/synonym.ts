@@ -1,4 +1,5 @@
-import { Column, PrimaryGeneratedColumn, Entity } from 'typeorm';
+import { Column, PrimaryGeneratedColumn, Entity, ManyToOne } from 'typeorm';
+import { Substance } from './substance';
 
 @Entity({
     name: 'Synonyms',
@@ -14,4 +15,7 @@ export class Synonym {
 
     @Column()
     public Name: string;
+
+    @ManyToOne(type => Substance, substance => substance.Synonymes)
+    public Substance: Substance;
 }
