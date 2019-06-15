@@ -1,6 +1,5 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { AppService } from './app.service';
-import { Request } from 'express';
 
 @Controller('healthy')
 export class AppController {
@@ -12,7 +11,10 @@ export class AppController {
   }
 
   @Get('substance')
-  getSubstanceInfo(@Query('substance') substance: string): string {     
+  getSubstanceInfo(@Query('substance') substance: string): string {
+
+    this.appService.findAllSubstances();
+
     return substance;
   }
 }

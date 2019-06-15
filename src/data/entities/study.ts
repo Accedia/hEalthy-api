@@ -1,4 +1,5 @@
 import { Column, PrimaryGeneratedColumn, Entity } from 'typeorm';
+import { HazardStatus } from 'src/common/hazardStatus';
 
 @Entity({
     name: 'Studies',
