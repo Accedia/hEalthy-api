@@ -1,4 +1,4 @@
-enum SubstanceType {
+export enum SubstanceType {
         Inorganic = 0,
         Organic = 1,
         Protein = 2,

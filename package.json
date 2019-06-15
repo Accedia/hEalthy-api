@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "format": "prettier --write \"src/**/*.ts\"",
-    "start": "nodemon --exec ts-node -r tsconfig-paths/register src/main.ts",
+    "start": "ts-node -r tsconfig-paths/register src/main.ts",
     "start:dev": "concurrently --handle-input \"wait-on dist/main.js && nodemon\" \"tsc -w -p tsconfig.build.json\" ",
     "start:debug": "nodemon --config nodemon-debug.json",
     "prestart:prod": "rimraf dist && npm run build",
@@ -20,13 +20,18 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@nestjs/common": "^6.0.0",
+    "@hapi/joi": "^15.0.3",
+    "@nestjs/common": "^6.3.1",
     "@nestjs/core": "^6.0.0",
     "@nestjs/platform-express": "^6.0.0",
+    "@nestjs/swagger": "^3.0.2",
     "@nestjs/typeorm": "^6.1.2",
+    "dotenv": "^8.0.0",
+    "mysql": "^2.17.1",
     "reflect-metadata": "^0.1.12",
     "rimraf": "^2.6.2",
     "rxjs": "^6.3.3",
+    "swagger-ui-express": "^4.0.6",
     "typeorm": "^0.2.18"
   },
   "devDependencies": {
