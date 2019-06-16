@@ -42,13 +42,10 @@ export class AppService {
   }
 
   private processQueryInputToIngridientNames(query: string): string[] {
-    const queryToProcess = query.toLowerCase().replace('/n', ', ');
-    const ingredientsString = 'ingredients: ';
-    const startOfIngredients = queryToProcess.indexOf(ingredientsString) + ingredientsString.length;
-    const endOfIngredients = queryToProcess.substring(startOfIngredients).indexOf('.');
-    const ingredients = queryToProcess.slice(startOfIngredients, (endOfIngredients + ingredientsString.length));
+    query = query.replace(/\n/g, '');
+    const match = this.getRegexGroup(query, /ingredients:\s(.+)\./gm, 1);
 
-    return ingredients.split(', ').map(x => x.trim());
+    return match.split(', ').map(x => x.trim());
   }
 
   private selectSynonyms(substance: SubstanceDTO, ingredientNames: string[]): boolean {
@@ -124,6 +121,28 @@ export class AppService {
       }),
       {},
     );
+  }
+
+  private getRegexGroup(input: string, regex: any, index: number): string {
+    console.log(input);
+    let data = '';
+    let m;
+
+    while ((m = regex.exec(input)) !== null) {
+      // This is necessary to avoid infinite loops with zero-width matches
+      if (m.index === regex.lastIndex) {
+        regex.lastIndex++;
+      }
+
+      // The result can be accessed through the `m`-variable.
+      m.forEach((match, groupIndex) => {
+          if (groupIndex === index) {
+            data = match;
+          }
+      });
+    }
+
+    return data;
   }
 
   private evaluateEqualness(existingSubstance: string, querySubstance: string): boolean {
