@@ -30,8 +30,8 @@ export class CacheService {
               return substanceDTO;
             });
             this.Substances = substances;
+            console.log('Data loaded successfully');
           } catch (error) {
-      // tslint:disable-next-line: no-console
             console.log(error);
           }
     }

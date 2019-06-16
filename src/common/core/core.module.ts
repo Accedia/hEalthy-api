@@ -3,9 +3,10 @@ import { AppService } from './../../app.service';
 import { Module } from '@nestjs/common';
 import { Substance } from './../../data/entities/substance';
 import { CacheService } from 'src/cache.service';
+import { Study } from 'src/data/entities/study';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Substance])],
+  imports: [TypeOrmModule.forFeature([Substance, Study])],
   providers: [AppService, CacheService],
   exports: [AppService, CacheService],
 })
