@@ -1,5 +1,5 @@
-import { SubstanceType } from 'src/common/substanceType';
 import { StudyDTO } from './study.dto';
+import { OverallStatus } from 'src/common/overallStatus';
 
 export class SubstanceDTO {
   public Id: number;
@@ -11,4 +11,5 @@ export class SubstanceDTO {
   public MasterExternalId: number;
   public Synonyms: string[];
   public Studies: StudyDTO[];
+  public OveralStatus: string;
 }
