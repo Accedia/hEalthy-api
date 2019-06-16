@@ -9,6 +9,6 @@ export class SubstanceDTO {
   public Type: string;
   public ExternalUrl: string;
   public MasterExternalId: number;
-  public Synonymes: string[];
+  public Synonyms: string[];
   public Studies: StudyDTO[];
 }
