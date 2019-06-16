@@ -18,7 +18,7 @@ export class CacheService {
         try {
             const substances: SubstanceDTO[] =
               (await this.substanceRepository
-                .find({relations: ['Synonymes']}))
+                .find({relations: ['Synonyms']}))
                 .map((sub: Substance) => {
                   const substanceDTO = new SubstanceDTO();
                   substanceDTO.Description = sub.Description;
@@ -28,7 +28,7 @@ export class CacheService {
                   substanceDTO.MasterExternalId = sub.MasterExternalId;
                   substanceDTO.Name = sub.Name;
                   substanceDTO.Type = SubstanceType[sub.Type];
-                  substanceDTO.Synonymes = sub.Synonymes.map(s => s.Name);
+                  substanceDTO.Synonyms = sub.Synonyms.map(s => s.Name);
                   return substanceDTO;
                 });
             this.Substances = substances;

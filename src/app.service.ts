@@ -19,9 +19,7 @@ export class AppService {
     const term = substance.toLowerCase().trim();
     const substances = this.cacheService.Substances
       .filter(sb => sb.Name.toLowerCase().includes(term)
-        || this.evaluateEqualness(sb.Name.toLowerCase(), term)
-        || sb.Synonymes.some(syn => syn.toLowerCase().includes(term)
-          || this.evaluateEqualness(syn.toLowerCase(), term)));
+        || sb.Synonyms.some(syn => syn.toLowerCase().includes(term)));
 
     await this.includeStudies(substances);
 
@@ -30,12 +28,7 @@ export class AppService {
   }
 
   async querySubstances(query: string): Promise<SubstanceDTO[]> {
-    const ingredientsString = 'ingredients: ';
-    const startOfIngredients = query.indexOf(ingredientsString) + ingredientsString.length;
-    const endOfIngredients = query.substring(startOfIngredients).indexOf('.');
-    const ingredients = query.slice(startOfIngredients, (endOfIngredients + ingredientsString.length));
-
-    const ingredientNames = ingredients.toLowerCase().split(', ').map(x => x.trim());
+    const ingredientNames = this.processQueryInputToIngridientNames(query);
 
     const matchedSubstances = this.cacheService.Substances
       .filter(substance => ingredientNames.includes(substance.Name.toLowerCase())
@@ -48,8 +41,18 @@ export class AppService {
       .map(x => this.aggreagateSubstance(x));
   }
 
+  private processQueryInputToIngridientNames(query: string): string[] {
+    const queryToProcess = query.toLowerCase().replace('/n', ', ');
+    const ingredientsString = 'ingredients: ';
+    const startOfIngredients = queryToProcess.indexOf(ingredientsString) + ingredientsString.length;
+    const endOfIngredients = queryToProcess.substring(startOfIngredients).indexOf('.');
+    const ingredients = queryToProcess.slice(startOfIngredients, (endOfIngredients + ingredientsString.length));
+
+    return ingredients.split(', ').map(x => x.trim());
+  }
+
   private selectSynonyms(substance: SubstanceDTO, ingredientNames: string[]): boolean {
-    return substance.Synonymes.map(syn => syn.toLowerCase())
+    return substance.Synonyms.map(syn => syn.toLowerCase())
       .some(v => ingredientNames.includes(v) || ingredientNames.some(x => this.evaluateEqualness(x, v)));
   }
 
@@ -60,7 +63,7 @@ export class AppService {
       Name: substanceMap[1][0].Name,
       Description: substanceMap[1][0].Description,
       ExternalUrl: substanceMap[1][0].ExternalUrl,
-      Synonymes: [...new Set((substanceMap[1] as SubstanceDTO[]).reduce((a, b) => a = a.concat(b.Synonymes), []))],
+      Synonyms: [...new Set((substanceMap[1] as SubstanceDTO[]).reduce((a, b) => a = a.concat(b.Synonyms), []))],
       Studies: this.determineRiskiestStudy((substanceMap[1] as SubstanceDTO[]).reduce((a, b) => a = a.concat(b.Studies), [])),
       Type: substanceMap[1][0].Type,
     } as SubstanceDTO;
@@ -125,7 +128,7 @@ export class AppService {
 
   private evaluateEqualness(existingSubstance: string, querySubstance: string): boolean {
     const distance = this.damerauLevenshteinDistance(existingSubstance, querySubstance);
-    if (distance > querySubstance.length * 0.20) {
+    if (distance > querySubstance.length * 0.15) {
       return false;
     } else {
       return true;

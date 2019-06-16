@@ -29,5 +29,5 @@ export class Substance {
     public MasterExternalId: number;
 
     @OneToMany(type => Synonym, synonym => synonym.Substance)
-    public Synonymes: Synonym[];
+    public Synonyms: Synonym[];
 }

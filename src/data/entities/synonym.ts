@@ -16,6 +16,6 @@ export class Synonym {
     @Column()
     public Name: string;
 
-    @ManyToOne(type => Substance, substance => substance.Synonymes)
+    @ManyToOne(type => Substance, substance => substance.Synonyms)
     public Substance: Substance;
 }
