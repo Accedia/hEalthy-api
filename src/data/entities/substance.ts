@@ -1,6 +1,5 @@
 import { Column, PrimaryGeneratedColumn, Entity, OneToMany } from 'typeorm';
 import { SubstanceType } from 'src/common/substanceType';
-import { type } from 'os';
 import { Synonym } from './synonym';
 
 @Entity({

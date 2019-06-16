@@ -8,11 +8,6 @@ import { SubstanceDTO } from './data/dto/substance.dto';
 export class AppController {
   constructor(private readonly appService: AppService, private readonly cacheService: CacheService) {}
 
-  @Get('healthy')
-  getHello(): string {
-    return this.appService.getHello();
-  }
-
   @Get('substance')
   getSubstanceInfo(@Query('substance') substance: string): string {
 
@@ -26,7 +21,7 @@ export class AppController {
     this.cacheService.LoadAllSubstances();
   }
 
-  @Post('processSubstances')
+  @Post('process')
   async processSubstances(@Body() processSubstancesRequest: ProcessSubstancesRequest): Promise<SubstanceDTO[]> {
     return this.appService.querySubstances(processSubstancesRequest.query);
   }
