@@ -4,6 +4,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { CacheService } from './cache.service';
 import { Study } from './data/entities/study';
+import { StudyDTO } from './data/dto/study.dto';
+import { HazardStatus } from './common/hazardStatus';
 
 @Injectable()
 export class AppService {
@@ -16,8 +18,10 @@ export class AppService {
   async findSubstanceByName(substance: string): Promise<SubstanceDTO[]> {
     const term = substance.toLowerCase().trim();
     const substances = this.cacheService.Substances
-      .filter(sb => this.evaluateEqualness(sb.Name.toLowerCase(), term)
-        || sb.Synonymes.some(syn => this.evaluateEqualness(syn.toLowerCase(), term)));
+      .filter(sb => sb.Name.toLowerCase().includes(term)
+        || this.evaluateEqualness(sb.Name.toLowerCase(), term)
+        || sb.Synonymes.some(syn => syn.toLowerCase().includes(term)
+          || this.evaluateEqualness(syn.toLowerCase(), term)));
 
     await this.includeStudies(substances);
 
@@ -57,8 +61,20 @@ export class AppService {
       Description: substanceMap[1][0].Description,
       ExternalUrl: substanceMap[1][0].ExternalUrl,
       Synonymes: [...new Set((substanceMap[1] as SubstanceDTO[]).reduce((a, b) => a = a.concat(b.Synonymes), []))],
-      Studies: (substanceMap[1] as SubstanceDTO[]).reduce((a, b) => a = a.concat(b.Studies), []),
+      Studies: this.determineRiskiestStudy((substanceMap[1] as SubstanceDTO[]).reduce((a, b) => a = a.concat(b.Studies), [])),
+      Type: substanceMap[1][0].Type,
     } as SubstanceDTO;
+  }
+
+  private determineRiskiestStudy(studies: StudyDTO[]): StudyDTO[] {
+    if (studies.length === 0) {
+      return [];
+    }
+
+    const riskiest = studies
+      .sort((a, b) => b.SafetyFactor - a.SafetyFactor)[0];
+
+    return [riskiest];
   }
 
   private async includeStudies(substances: SubstanceDTO[]): Promise<void> {
@@ -72,8 +88,26 @@ export class AppService {
       }), 'SubstanceID') : [];
 
     substances.forEach(sub => sub.Studies = studies[sub.Id]
-      ? studies[sub.Id]
+      ? studies[sub.Id].map(x => this.toDto(x))
       : []);
+  }
+
+  private toDto(study: Study): StudyDTO {
+    return {
+      Consumers: study.Consumers,
+      ExternalUrl: study.ExternalUrl,
+      Id: study.Id,
+      IsCarcinogenic: HazardStatus[study.IsCarcinogenic],
+      IsGenotoxic: HazardStatus[study.IsGenotoxic],
+      IsMutagenic: HazardStatus[study.IsMutagenic],
+      Remarks: study.Remarks,
+      RiskInFullText: study.RiskInFullText,
+      RiskUnit: study.RiskUnit,
+      RiskValue: parseFloat(study.RiskValue.toString()),
+      SafetyFactor: parseFloat(study.SafetyFactor.toString()),
+      SubstanceClass: study.SubstanceClass,
+      SubstanceID: study.SubstanceID,
+    } as StudyDTO;
   }
 
   private groupBy(items: any[], key: string) {

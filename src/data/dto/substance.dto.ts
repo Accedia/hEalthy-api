@@ -6,7 +6,7 @@ export class SubstanceDTO {
   public ExternalId: number;
   public Name: string;
   public Description: string;
-  public Type: SubstanceType;
+  public Type: string;
   public ExternalUrl: string;
   public MasterExternalId: number;
   public Synonymes: string[];
