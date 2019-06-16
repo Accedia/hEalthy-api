@@ -28,7 +28,7 @@ export class AppService {
   }
 
   async querySubstances(query: string): Promise<SubstanceDTO[]> {
-    const ingredientNames = this.processQueryInputToIngridientNames(query.toLowerCase());
+    const ingredientNames = this.processQueryInputToIngridientNames(query);
     const matchedSubstances = this.cacheService.Substances
       .filter(substance => ingredientNames.includes(substance.Name.toLowerCase())
           || ingredientNames.some(x => this.evaluateEqualness(x, substance.Name.toLowerCase()))
@@ -42,9 +42,9 @@ export class AppService {
 
   private processQueryInputToIngridientNames(query: string): string[] {
     query = query.replace(/\n/g, '');
-    const match = this.getRegexGroup(query, /ingredients:\s(.*?)\./gm, 1);
+    const match = this.getRegexGroup(query, /Ingredients:\s*(.*?)\.\s[A-Z]/gmi, 1);
 
-    return match.split(', ').map(x => x.trim());
+    return match.toLowerCase().split(', ').map(x => x.trim());
   }
 
   private selectSynonyms(substance: SubstanceDTO, ingredientNames: string[]): boolean {
