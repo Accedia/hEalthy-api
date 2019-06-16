@@ -16,21 +16,10 @@ export class AppService {
     private readonly cacheService: CacheService,
   ) { }
 
-  async findAllSubstances(): Promise<SubstanceDTO[]> {
-    try {
-      const substances: SubstanceDTO[] = (await this.substanceRepository.find({})).map((sub: Substance) => {
-        const substanceDTO = new SubstanceDTO();
-        substanceDTO.Description = sub.Description;
-
-        return substanceDTO;
-      });
-      substances.forEach(it => {
-        console.log(it);
-      });
-      return substances;
-    } catch (error) {
-      console.log(error);
-    }
+  async findSubstanceByName(substance: string): Promise<SubstanceDTO[]> {
+    const substances = this.cacheService.Substances
+    .filter(sb => sb.Name === substance || sb.Synonyms.map(syn => syn.Name === substance));
+    return substances;
   }
 
   async querySubstances(query: string): Promise<SubstanceDTO[]> {

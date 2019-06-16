@@ -9,11 +9,8 @@ export class AppController {
   constructor(private readonly appService: AppService, private readonly cacheService: CacheService) {}
 
   @Get('substance')
-  getSubstanceInfo(@Query('substance') substance: string): string {
-
-    this.appService.findAllSubstances();
-
-    return substance;
+  async getSubstanceInfo(@Query('substance') substance: string): Promise<SubstanceDTO[]> {
+    return this.appService.findSubstanceByName(substance);
   }
 
   @Get('load')
