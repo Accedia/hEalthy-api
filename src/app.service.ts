@@ -6,6 +6,7 @@ import { CacheService } from './cache.service';
 import { Study } from './data/entities/study';
 import { StudyDTO } from './data/dto/study.dto';
 import { HazardStatus } from './common/hazardStatus';
+import { OverallStatus } from './common/overallStatus';
 
 @Injectable()
 export class AppService {
@@ -53,6 +54,8 @@ export class AppService {
   }
 
   private aggreagateSubstance(substanceMap: any[]): SubstanceDTO {
+    const riskiesStudy = this.determineRiskiestStudy((substanceMap[1] as SubstanceDTO[])
+      .reduce((a, b) => a = a.concat(b.Studies), []));
     return {
       Id: substanceMap[1][0].Id,
       ExternalId: substanceMap[1][0].ExternalId,
@@ -60,8 +63,9 @@ export class AppService {
       Description: substanceMap[1][0].Description,
       ExternalUrl: substanceMap[1][0].ExternalUrl,
       Synonyms: [...new Set((substanceMap[1] as SubstanceDTO[]).reduce((a, b) => a = a.concat(b.Synonyms), []))],
-      Studies: this.determineRiskiestStudy((substanceMap[1] as SubstanceDTO[]).reduce((a, b) => a = a.concat(b.Studies), [])),
+      Studies: riskiesStudy,
       Type: substanceMap[1][0].Type,
+      OveralStatus: OverallStatus[this.determineOverallStatus(riskiesStudy[0])],
     } as SubstanceDTO;
   }
 
@@ -74,6 +78,44 @@ export class AppService {
       .sort((a, b) => b.SafetyFactor - a.SafetyFactor)[0];
 
     return [riskiest];
+  }
+
+  private determineOverallStatus(study: StudyDTO): OverallStatus {
+    if (!study) {
+      return OverallStatus.Unknown;
+    }
+
+    if (study.SafetyFactor !== 0) {
+      let status: OverallStatus;
+
+      if (study.SafetyFactor < 3500) {
+        status = OverallStatus.Safe;
+      } else if (study.SafetyFactor >= 3500 && study.SafetyFactor < 6500) {
+        status = OverallStatus.PossiblyDangerous;
+      } else {
+        status = OverallStatus.Dangerous;
+      }
+
+      return status;
+    } else {
+      let status: OverallStatus;
+
+      if (study.IsCarcinogenic === 'Positive'
+        || study.IsGenotoxic === 'Positive'
+        || study.IsMutagenic === 'Positive') {
+        status = OverallStatus.Dangerous;
+      } else if (study.IsCarcinogenic === 'Ambiguous'
+        || study.IsGenotoxic === 'Ambiguous'
+        || study.IsMutagenic === 'Ambiguous') {
+        status = OverallStatus.PossiblyDangerous;
+      } else if (study.IsCarcinogenic === 'Negative'
+        || study.IsGenotoxic === 'Negative'
+        || study.IsMutagenic === 'Negative') {
+        status = OverallStatus.Safe;
+      }
+
+      return status;
+    }
   }
 
   private async includeStudies(substances: SubstanceDTO[]): Promise<void> {
