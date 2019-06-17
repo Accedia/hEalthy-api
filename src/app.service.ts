@@ -43,7 +43,7 @@ export class AppService {
 
   private processQueryInputToIngridientNames(query: string): string[] {
     query = query.replace(/\n/g, '');
-    const match = this.getRegexGroup(query, /Ingredients:\s*(.*?)\.\s[A-Z]/gmi, 1);
+    const match = this.getRegexGroup(query, /Ingredients:\s*(.*?)\./gmi, 1);
 
     return match.toLowerCase().split(', ').map(x => x.trim());
   }
