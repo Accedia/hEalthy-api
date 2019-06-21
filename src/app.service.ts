@@ -7,6 +7,7 @@ import { Study } from './data/entities/study';
 import { StudyDTO } from './data/dto/study.dto';
 import { HazardStatus } from './common/hazardStatus';
 import { OverallStatus } from './common/overallStatus';
+import { UtilsSevice } from './common/utils.service';
 
 @Injectable()
 export class AppService {
@@ -14,43 +15,42 @@ export class AppService {
     @InjectRepository(Study)
     private readonly studyRepository: Repository<Study>,
     private readonly cacheService: CacheService,
+    private readonly utils: UtilsSevice,
   ) { }
 
   async findSubstanceByName(substance: string): Promise<SubstanceDTO[]> {
     const term = substance.toLowerCase().trim();
-    const substances = this.cacheService.Substances
+    const substances = this.cacheService.substances
       .filter(sb => sb.Name.toLowerCase().includes(term)
         || sb.Synonyms.some(syn => syn.toLowerCase().includes(term)));
 
     await this.includeStudies(substances);
 
-    return Object.entries(this.groupBy(substances, 'MasterExternalId'))
+    return Object.entries(this.utils.groupBy(substances, 'MasterExternalId'))
       .map(x => this.aggreagateSubstance(x));
   }
 
   async querySubstances(query: string): Promise<SubstanceDTO[]> {
-    const ingredientNames = this.processQueryInputToIngridientNames(query);
-    const matchedSubstances = this.cacheService.Substances
-      .filter(substance => ingredientNames.includes(substance.Name.toLowerCase())
-          || ingredientNames.some(x => this.evaluateEqualness(x, substance.Name.toLowerCase()))
-        || this.selectSynonyms(substance, ingredientNames));
+    const ingredientNames = this.processQueryInputToIngredientNames(query);
+
+    const matchedSubstances = [].concat.apply([], ingredientNames
+      .map(q => this.cacheService.findSubstance(q)
+      .concat(this.cacheService.findSubstancesBySynonym(q))))
+      .filter(x => !!x);
 
     await this.includeStudies(matchedSubstances);
 
-    return Object.entries(this.groupBy(matchedSubstances, 'MasterExternalId'))
+    const result = Object.entries(this.utils.groupBy(matchedSubstances, 'MasterExternalId'))
       .map(x => this.aggreagateSubstance(x));
+
+    return result;
   }
 
-  private processQueryInputToIngridientNames(query: string): string[] {
+  private processQueryInputToIngredientNames(query: string): string[] {
     query = query.replace(/\n/g, '');
-    const match = this.getRegexGroup(query, /Ingredients:\s*(.*?)\./gmi, 1);
+    const match = this.utils.getRegexGroup(query, /Ingredients:\s*(.*?)\./gmi, 1);
 
-    return match.toLowerCase().split(', ').map(x => x.trim());
-  }
-
-  private selectSynonyms(substance: SubstanceDTO, ingredientNames: string[]): boolean {
-    return substance.Synonyms.map(syn => syn.toLowerCase())
-      .some(v => ingredientNames.includes(v) || ingredientNames.some(x => this.evaluateEqualness(x, v)));
+    return match.split(/[,():]/).map(x => x.trim()).filter(x => !!x);
   }
 
   private aggreagateSubstance(substanceMap: any[]): SubstanceDTO {
@@ -122,7 +122,7 @@ export class AppService {
     const substanceIds = substances.map(s => s.Id);
 
     const studies = substances.length > 0 ?
-      this.groupBy(await this.studyRepository.find({
+      this.utils.groupBy(await this.studyRepository.find({
         where: {
           SubstanceID: In(substanceIds),
         },
@@ -151,95 +151,12 @@ export class AppService {
     } as StudyDTO;
   }
 
-  private groupBy(items: any[], key: string) {
-    return items.reduce(
-      (result, item) => ({
-        ...result,
-        [item[key]]: [
-          ...(result[item[key]] || []),
-          item,
-        ],
-      }),
-      {},
-    );
-  }
-
-  private getRegexGroup(input: string, regex: any, index: number): string {
-    let data = '';
-    let m;
-
-    while ((m = regex.exec(input)) !== null) {
-      // This is necessary to avoid infinite loops with zero-width matches
-      if (m.index === regex.lastIndex) {
-        regex.lastIndex++;
-      }
-
-      // The result can be accessed through the `m`-variable.
-      m.forEach((match, groupIndex) => {
-          if (groupIndex === index) {
-            data = match;
-          }
-      });
-    }
-
-    return data;
-  }
-
   private evaluateEqualness(existingSubstance: string, querySubstance: string): boolean {
-    const distance = this.damerauLevenshteinDistance(existingSubstance, querySubstance);
+    const distance = this.utils.damerauLevenshteinDistance(existingSubstance, querySubstance);
     if (distance > querySubstance.length * 0.15) {
       return false;
     } else {
       return true;
     }
-  }
-
-  public damerauLevenshteinDistance(source, target) {
-    if (!source || source.length === 0) {
-      if (!target || target.length === 0) {
-        return 0;
-      } else {
-        return target.length;
-      }
-    } else if (!target) {
-      return source.length;
-    }
-    const sourceLength = source.length;
-    const targetLength = target.length;
-    const score = [];
-
-    const INF = sourceLength + targetLength;
-    score[0] = [INF];
-    for (let i = 0; i <= sourceLength; i++) { score[i + 1] = []; score[i + 1][1] = i; score[i + 1][0] = INF; }
-    for (let i = 0; i <= targetLength; i++) { score[1][i + 1] = i; score[0][i + 1] = INF; }
-
-    const sd = {};
-    const combinedStrings = source + target;
-    const combinedStringsLength = combinedStrings.length;
-    for (let i = 0; i < combinedStringsLength; i++) {
-      const letter = combinedStrings[i];
-      if (!sd.hasOwnProperty(letter)) {
-        sd[letter] = 0;
-      }
-    }
-
-    for (let i = 1; i <= sourceLength; i++) {
-      let DB = 0;
-      for (let j = 1; j <= targetLength; j++) {
-        const i1 = sd[target[j - 1]];
-        const j1 = DB;
-
-        if (source[i - 1] === target[j - 1]) {
-          score[i + 1][j + 1] = score[i][j];
-          DB = j;
-        } else {
-          score[i + 1][j + 1] = Math.min(score[i][j], Math.min(score[i + 1][j], score[i][j + 1])) + 1;
-        }
-
-        score[i + 1][j + 1] = Math.min(score[i + 1][j + 1], score[i1][j1] + (i - i1 - 1) + 1 + (j - j1 - 1));
-      }
-      sd[source[i - 1]] = i;
-    }
-    return score[sourceLength + 1][targetLength + 1];
   }
 }
