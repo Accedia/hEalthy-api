@@ -11,8 +11,8 @@ export interface EnvConfig {
 @Injectable()
 export class ConfigService {
   private readonly envConfig: EnvConfig;
-  
-  constructor(filePath: string | undefined = undefined) {
+
+  constructor(filePath?: string) {
     let config;
     if (filePath !== undefined) {
       config = dotenv.parse(fs.readFileSync(filePath));
@@ -36,6 +36,7 @@ export class ConfigService {
       DB_USERNAME: Joi.string().default('root'),
       DB_PASSWORD: Joi.string().default('root'),
       DB_DATABASE_NAME: Joi.string().required(),
+      GOOGLE_API_KEY: Joi.string().required(),
     });
 
     const { error, value: validatedEnvConfig } = Joi.validate(

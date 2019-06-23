@@ -8,9 +8,13 @@ import { StudyDTO } from './data/dto/study.dto';
 import { HazardStatus } from './common/hazardStatus';
 import { OverallStatus } from './common/overallStatus';
 import { UtilsSevice } from './common/utils.service';
+import fetch from 'node-fetch';
 
 @Injectable()
 export class AppService {
+
+  private googleVisionUrl = `https://vision.googleapis.com/v1/images:annotate?key=${process.env.GOOGLE_API_KEY}`;
+
   constructor(
     @InjectRepository(Study)
     private readonly studyRepository: Repository<Study>,
@@ -44,6 +48,45 @@ export class AppService {
       .map(x => this.aggreagateSubstance(x));
 
     return result;
+  }
+
+  async readPicture(imageUrl: string): Promise<string> {
+    const requestObject = this.buildVisionApiRequest(imageUrl);
+
+    const request = fetch(this.googleVisionUrl, {
+      method: 'post',
+      body: JSON.stringify(requestObject),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const response = await (await request).json();
+    if (response.responses && response.responses.length > 0
+      && response.responses[0].textAnnotations && response.responses[0].textAnnotations.length > 0) {
+        return response.responses[0].textAnnotations[0].description;
+    }
+
+    return '';
+  }
+
+  private buildVisionApiRequest(imageUrl: string) {
+    return {
+      requests: [
+        {
+          image: {
+            source: {
+              imageUri: imageUrl,
+            },
+          },
+          features: [
+            {
+              type: 'TEXT_DETECTION',
+              maxResults: 1,
+              model: 'builtin/latest',
+            },
+          ],
+        },
+      ],
+    };
   }
 
   private processQueryInputToIngredientNames(query: string): string[] {
@@ -149,14 +192,5 @@ export class AppService {
       SubstanceClass: study.SubstanceClass,
       SubstanceID: study.SubstanceID,
     } as StudyDTO;
-  }
-
-  private evaluateEqualness(existingSubstance: string, querySubstance: string): boolean {
-    const distance = this.utils.damerauLevenshteinDistance(existingSubstance, querySubstance);
-    if (distance > querySubstance.length * 0.15) {
-      return false;
-    } else {
-      return true;
-    }
   }
 }

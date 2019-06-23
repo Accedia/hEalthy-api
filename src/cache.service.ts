@@ -28,7 +28,7 @@ export class CacheService {
     private readonly utils: UtilsSevice,
   ) { }
 
-  public async LoadAllSubstances() {
+  public async loadAllSubstances(): Promise<any> {
     try {
       const substances: SubstanceDTO[] =
         (await this.substanceRepository
@@ -57,9 +57,14 @@ export class CacheService {
       const allSubstances = [...new Set(this.substances.map(sub => sub.Name))];
       this.substanceTree = (BKTree as any).from(allSubstances, this.utils.damerauLevenshteinDistance);
 
-      console.log('Data loaded successfully');
+      return {
+        result: 'Success',
+      };
     } catch (error) {
-      console.log(error);
+      return {
+        result: 'Error',
+        message: error.toString(),
+      };
     }
   }
 
