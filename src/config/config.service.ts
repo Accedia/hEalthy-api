@@ -14,10 +14,25 @@ export class ConfigService {
 
   constructor(filePath?: string) {
     let config;
-    if (filePath !== undefined) {
-      config = dotenv.parse(fs.readFileSync(filePath));
+    const environment = process.env.NODE_ENV;
+    if (environment === 'docker') {
+      config = {
+        NODE_ENV: process.env.NODE_ENV,
+        JWT_SECRET: process.env.JWT_SECRET,
+        DB_TYPE: process.env.DB_TYPE,
+        DB_HOST: process.env.DB_HOST,
+        DB_PORT: process.env.DB_PORT,
+        DB_USERNAME: process.env.DB_USERNAME,
+        DB_PASSWORD: process.env.DB_PASSWORD,
+        DB_DATABASE_NAME: process.env.DB_DATABASE_NAME,
+        GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
+      };
     } else {
-      config = dotenv.config().parsed;
+      if (filePath !== undefined) {
+        config = dotenv.parse(fs.readFileSync(filePath));
+      } else {
+        config = dotenv.config().parsed;
+      }
     }
     this.envConfig = this.validateInput(config);
   }
@@ -25,7 +40,7 @@ export class ConfigService {
   private validateInput(envConfig: EnvConfig): EnvConfig {
     const envVarsSchema: Joi.ObjectSchema = Joi.object({
       NODE_ENV: Joi.string()
-        .valid(['development', 'production', 'test', 'provision'])
+        .valid(['development', 'production', 'test', 'provision', 'docker'])
         .default('development'),
       PORT: Joi.number().default(3000),
       JWT_SECRET: Joi.string().required(),
