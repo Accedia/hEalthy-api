@@ -23,7 +23,7 @@
     "@hapi/joi": "^15.0.3",
     "@nestjs/common": "^6.3.1",
     "@nestjs/core": "^6.0.0",
-    "@nestjs/platform-express": "^6.0.0",
+    "@nestjs/platform-express": "^9.2.1",
     "@nestjs/swagger": "^3.0.2",
     "@nestjs/typeorm": "^6.1.2",
     "dotenv": "^8.0.0",
